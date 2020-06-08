@@ -1,6 +1,8 @@
+// Configuration
 @import 'utils/libs';
-@import 'utils/variables.scss';
+@import 'utils/variables';
+@import 'utils/fonts';
 
-.hello {
-  color: green;
-}
+// Layout & components
+@import 'reboot';
+@import 'main';
