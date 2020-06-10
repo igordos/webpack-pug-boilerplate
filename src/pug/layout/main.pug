@@ -11,6 +11,10 @@ html(lang='ru')
     meta(name="description", content=description)
     block head
   body
+    // Render svg sprites
+    if htmlWebpackPlugin.files.sprites
+      each spriteFileName in htmlWebpackPlugin.files.sprites
+        != spriteFileName
     .wrapper
         include ../includes/modules/header
         .main

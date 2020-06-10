@@ -1,12 +1,17 @@
 const path = require('path');
+const glob = require('glob');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const CopyPlugin = require('copy-webpack-plugin');
 const ImageminPlugin = require('imagemin-webpack-plugin').default;
+const SpriteLoaderPlugin = require('svg-sprite-loader/plugin');
 
 module.exports = {
-  entry: './src/index.js',
+  entry: {
+    main: './src/index.js',
+    sprite: glob.sync('./src/assets/images/svg/**/*.svg'),
+  },
   output: {
     filename: `assets/js/[name].[hash].js`,
     path: path.resolve(__dirname, 'dist'),
@@ -76,6 +81,7 @@ module.exports = {
       {
         test: /\.(png|svg|jpe?g|gif)$/,
         loader: 'file-loader',
+        exclude: path.resolve(__dirname, 'src/assets/images/svg'),
         options: {
           name: '[name].[ext]',
         },
@@ -83,13 +89,19 @@ module.exports = {
       {
         test: /\.(woff(2)?|ttf|eot|svg)(\?v=\d+\.\d+\.\d+)?$/,
         loader: 'file-loader',
+        include: path.resolve(__dirname, 'src/assets/fonts'),
         options: {
           name: '[name].[ext]',
         },
       },
       {
         test: /\.svg$/,
-        loader: 'svg-inline-loader',
+        loader: 'svg-sprite-loader',
+        include: path.resolve(__dirname, 'src/assets/images/svg'),
+        options: {
+          esModule: false,
+          extract: true,
+        },
       },
     ],
   },
@@ -111,7 +123,39 @@ module.exports = {
     new HtmlWebpackPlugin({
       title: 'Main page',
       template: './src/pug/pages/index.pug',
-      inject: true,
+      // Specify chunks to exclude sprite entry point
+      chunks: ['main', 'vendors'],
+      minify: {
+        collapseWhitespace: true,
+        removeComments: true,
+      },
     }),
+    new SpriteLoaderPlugin({ plainSprite: true }),
+    // Remove sprite.js file
+    {
+      apply: (compiler) => {
+        compiler.plugin('emit', (compilation, callback) => {
+          const { assets } = compilation;
+          const chunkToRemove = Object.keys(assets)
+            .filter((chunk) => chunk.match(/sprite.*\.js$/))
+            .join('');
+          delete compilation.assets[chunkToRemove];
+          callback();
+        });
+      },
+    },
+    // Remove sprite.svg file
+    {
+      apply: (compiler) => {
+        compiler.plugin('emit', (compilation, callback) => {
+          const { assets } = compilation;
+          const chunkToRemove = Object.keys(assets)
+            .filter((chunk) => chunk.match(/sprite.*\.svg$/))
+            .join('');
+          delete compilation.assets[chunkToRemove];
+          callback();
+        });
+      },
+    },
   ],
 };
